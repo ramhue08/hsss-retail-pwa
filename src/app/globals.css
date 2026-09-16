@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-navy: #003a70;
+  --color-navy-deep: #001b3d;
+  --color-navy-muted: #1a4d82;
+  --color-cyan: #00aeef;
+  --color-cyan-soft: #e8f7fd;
+  --color-app-bg: #eef2f7;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-muted: #64748b;
+  --font-sans: var(--font-montserrat), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --shadow-card: 0 1px 2px rgb(0 35 70 / 0.04), 0 4px 16px rgb(0 35 70 / 0.06);
+  --shadow-elevated: 0 8px 30px rgb(0 35 70 / 0.1);
+  --radius-card: 1rem;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-app-bg);
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-main {
+  @apply mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8;
+}
+
+.app-surface {
+  @apply rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)];
+}
+
+.auth-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 0%, rgb(0 174 239 / 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgb(0 174 239 / 0.1), transparent 50%),
+    linear-gradient(160deg, var(--color-navy-deep) 0%, var(--color-navy) 55%, #002952 100%);
+}
