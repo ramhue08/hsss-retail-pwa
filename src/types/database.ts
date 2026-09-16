@@ -43,17 +43,3 @@ export type RetailDesign = {
   updated_at: string;
 };
 
-export type RetailWebhookStatus = "pending" | "delivered" | "failed";
-
-export type RetailWebhookEvent = {
-  id: string;
-  event_id: string;
-  event: string;
-  payload: Record<string, unknown>;
-  status: RetailWebhookStatus;
-  attempts: number;
-  next_retry_at: string | null;
-  last_error: string | null;
-  delivered_at: string | null;
-  created_at: string;
-};

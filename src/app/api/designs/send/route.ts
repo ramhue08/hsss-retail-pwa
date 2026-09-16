@@ -10,15 +10,13 @@ import {
 } from "@/lib/designs";
 import { screenDraftToPayload, type ScreenDraft } from "@/lib/orders";
 import { RETAIL_SERVICE_TYPE, snapshotFromScreen } from "@/lib/retail";
-import { appLink, designPdfUrl } from "@/lib/site";
+import { designPdfUrl } from "@/lib/site";
 import {
   TRACKING_COOKIE,
   mergeTracking,
   normalizeTracking,
   parseTrackingCookie,
-  trackingFromIdentity,
 } from "@/lib/tracking";
-import { enqueueWebhook, processDueWebhooks } from "@/lib/webhook";
 import { emailDesignPdf } from "@/lib/email/send-design";
 
 export const runtime = "nodejs";
@@ -98,98 +96,28 @@ export async function POST(request: NextRequest) {
     supplyPrice: snapshot.supply_price_ex_freight,
   });
 
-  const pdfUrl = designPdfUrl(designRef);
-  const link = appLink(identity.reentry_token);
-  const eventTracking = mergeTracking(tracking, trackingFromIdentity(identity));
-
   const response = NextResponse.json({
     ok: true,
     design_ref: designRef,
-    design_pdf_url: pdfUrl,
+    design_pdf_url: designPdfUrl(designRef),
   });
   setSessionCookie(response, identity.reentry_token);
 
   after(async () => {
     try {
-      await enqueueWebhook("app_access", {
-        email: identity.email,
-        first_name: identity.first_name,
-        phone: identity.phone,
-        postcode: identity.postcode,
-        marketing_consent: identity.marketing_consent,
-        app_link: link,
-        path: "diy",
-        lead_source: "diy-app",
-        utm_source: eventTracking.utm_source,
-        utm_campaign: eventTracking.utm_campaign,
-        utm_content: eventTracking.utm_content,
-        fbclid: eventTracking.fbclid,
-      });
-    } catch (err) {
-      console.error("[app_access] background failed", err);
-    }
-
-    try {
       const pdf = await getOrCreateDesignPdf(identity, design);
-      try {
-        await emailDesignPdf({
-          identity,
-          designRef,
-          pdf,
-          buildSummary: snapshot.summary,
-          system: snapshot.system,
-          finish: snapshot.finish,
-          measurements: snapshot.measurements,
-          supplyPrice: snapshot.supply_price_ex_freight,
-        });
-      } catch (err) {
-        console.error("[design_sent] email failed", err);
-      }
-      await enqueueWebhook("design_sent", {
-        email: identity.email,
-        first_name: identity.first_name,
-        phone: identity.phone,
-        postcode: identity.postcode,
-        app_link: link,
-        design_ref: designRef,
-        design_pdf_url: pdfUrl,
-        build_summary: snapshot.summary,
+      await emailDesignPdf({
+        identity,
+        designRef,
+        pdf,
+        buildSummary: snapshot.summary,
         system: snapshot.system,
         finish: snapshot.finish,
         measurements: snapshot.measurements,
-        supply_price_ex_freight: snapshot.supply_price_ex_freight,
-        path: "diy",
-        utm_source: eventTracking.utm_source,
-        utm_campaign: eventTracking.utm_campaign,
-        utm_content: eventTracking.utm_content,
-        fbclid: eventTracking.fbclid,
+        supplyPrice: snapshot.supply_price_ex_freight,
       });
-      await processDueWebhooks();
     } catch (err) {
-      console.error("[design_sent] background failed", err);
-      try {
-        await enqueueWebhook("design_sent", {
-          email: identity.email,
-          first_name: identity.first_name,
-          phone: identity.phone,
-          postcode: identity.postcode,
-          app_link: link,
-          design_ref: designRef,
-          design_pdf_url: pdfUrl,
-          build_summary: snapshot.summary,
-          system: snapshot.system,
-          finish: snapshot.finish,
-          measurements: snapshot.measurements,
-          supply_price_ex_freight: snapshot.supply_price_ex_freight,
-          path: "diy",
-          utm_source: eventTracking.utm_source,
-          utm_campaign: eventTracking.utm_campaign,
-          utm_content: eventTracking.utm_content,
-          fbclid: eventTracking.fbclid,
-        });
-      } catch (webhookErr) {
-        console.error("[design_sent] webhook enqueue failed", webhookErr);
-      }
+      console.error("[design_sent] email failed", err);
     }
   });
 
