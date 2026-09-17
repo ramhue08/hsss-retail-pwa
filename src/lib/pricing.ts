@@ -406,9 +406,16 @@ export function calcPrice(
   }
   const fee = Number(options?.perScreenFee);
   const screenFee = Number.isFinite(fee) && fee > 0 ? fee : 0;
-  const exGst = Math.round((base + colourAdd + doorAdd + screenFee) * 100) / 100;
+  const exGst = applyRetailMarkup(base + colourAdd + doorAdd + screenFee);
   const incGst = Math.round(exGst * 1.1 * 100) / 100;
   return { base, colourAdd, doorAdd, exGst, incGst };
+}
+
+/** Retail DIY is supply-only catalogue plus 35%. */
+export const RETAIL_PRICE_MARKUP = 1.35;
+
+export function applyRetailMarkup(amount: number) {
+  return Math.round(amount * RETAIL_PRICE_MARKUP * 100) / 100;
 }
 
 export function formatMoney(value: number) {

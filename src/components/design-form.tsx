@@ -19,6 +19,7 @@ import {
   type ScreenType,
 } from "@/lib/orders";
 import { coloursForDraft, RETAIL_SERVICE_TYPE } from "@/lib/retail";
+import { applyRetailMarkup, formatMoney } from "@/lib/pricing";
 import { SEND_DESIGN_LABEL } from "@/lib/site";
 import { trackDiyAppAccess, trackDiyQuoteRequest } from "@/lib/pixel";
 import {
@@ -699,7 +700,7 @@ export function DesignForm({
                     Sliding door size selected by HSSS based on opening
                   </Notice>
                   <p className="text-sm font-medium text-amber-700">
-                    Sliding door adds +$150
+                    Sliding door adds +{formatMoney(applyRetailMarkup(150))}
                   </p>
                   <SliderWidthNotice draft={draft} />
                 </>
@@ -716,13 +717,16 @@ export function DesignForm({
                         }
                       >
                         {w} mm
-                        {w === "762" ? " (+$100)" : ""}
+                        {w === "762"
+                          ? ` (+${formatMoney(applyRetailMarkup(100))})`
+                          : ""}
                       </ChoiceChip>
                     ))}
                   </ChipRow>
                   {draft.doorMM === "762" && (
                     <p className="text-sm font-medium text-amber-700">
-                      Wide door (762mm) adds +$100
+                      Wide door (762mm) adds +
+                      {formatMoney(applyRetailMarkup(100))}
                     </p>
                   )}
                   <HingeSideField

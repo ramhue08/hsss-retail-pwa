@@ -29,7 +29,7 @@ import {
   SMALLEST_STOCK_PANEL_MM,
   STOCK_GLASS_PANELS,
 } from "@/lib/stock-panels";
-import { formatMoney } from "@/lib/pricing";
+import { applyRetailMarkup, formatMoney } from "@/lib/pricing";
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { ChipRow, FieldSection, SelectField } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -121,7 +121,8 @@ export function RadiusCornerToggle({
       </ChipRow>
       {draft.isRadiusCorner && (
         <Notice variant="info">
-          200mm radius corner adds +{formatMoney(RADIUS_CORNER_EXTRA)}. Stock
+          200mm radius corner adds +
+          {formatMoney(applyRetailMarkup(RADIUS_CORNER_EXTRA))}. Stock
           panel widths: {RADIUS_CORNER_STOCK_SIZES.join(", ")}mm only.
         </Notice>
       )}

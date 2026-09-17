@@ -1,4 +1,5 @@
 import type { OrderScreenPayload } from "@/lib/orders";
+import { applyRetailMarkup, formatMoney } from "@/lib/pricing";
 
 /** Config keys that are billable / special upgrades staff must not miss. */
 const UPGRADE_KEYS = new Set([
@@ -72,7 +73,7 @@ function formatConfigValue(key: string, value: unknown): string | null {
   text = text.replace(/(\d)\s*mm\b/gi, "$1");
 
   if (key === "doorMM" && isBigDoor(text)) {
-    return "762 (+$100)";
+    return `762 (+${formatMoney(applyRetailMarkup(100))})`;
   }
 
   if (key === "hingeSide" || key === "returnSide" || key === "panelSide") {
