@@ -1647,15 +1647,14 @@ function FixedPanelReturnPlan({
   );
   const walkW = Math.max(FRONT_GLASS_RUN - fixedW - GAP, 12);
 
-  let walkX: number;
-  let fixedX: number;
-  if (!isRh) {
-    walkX = FRONT_WALK_START;
-    fixedX = FRONT_WALK_START + walkW + GAP;
-  } else {
-    fixedX = returnBarX - RETURN_W - GAP - fixedW;
-    walkX = fixedX - GAP - walkW;
-  }
+  const frontStart = isRh
+    ? mirrorRectX(FRONT_WALK_START, FRONT_GLASS_RUN)
+    : FRONT_WALK_START;
+  // Walk on the return side of the opening; fixed panel sits against the wall.
+  // LH: Return | Front(Walk) | Fixed (open wall).
+  // RH: Front(Walk) | Fixed (open/return wall) | Return.
+  const walkX = frontStart;
+  const fixedX = frontStart + walkW + GAP;
 
   const contentX = Math.min(topX1, DIM_RETURN_X - 12);
   const contentY = OPEN_WALL_Y1;
