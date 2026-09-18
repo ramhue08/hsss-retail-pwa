@@ -19,6 +19,15 @@ export const SMALLEST_STOCK_PANEL_MM = STOCK_GLASS_PANELS[0];
 
 export { SPLAY_GLASS, SPLAY_HOB } from "@/lib/constants";
 
+/** Hob length minus this offset is the return glass panel (same as Front & Return). */
+export const HOB_TO_PANEL_OFFSET_MM = 15;
+
+export function returnPanelFromHob(hobMM: number) {
+  const hob = Number(hobMM);
+  if (!Number.isFinite(hob) || hob <= 0) return 0;
+  return hob - HOB_TO_PANEL_OFFSET_MM;
+}
+
 export const DOOR_DEDUCT = { 662: 697, 762: 797 } as const;
 
 export const MIN_OPENING = {
@@ -418,10 +427,9 @@ export function resolvePanelsForDraft(draft: ScreenDraft): PanelsToPick {
   if (draft.fixedStyle === "double") {
     chosen.push(num(draft.leftFixedPanelMM), num(draft.rightFixedPanelMM));
   } else if (draft.fixedStyle === "panelReturn") {
+    chosen.push(returnPanelFromHob(num(draft.returnMM)));
     if (draft.fixedPanelReturnStyle === "inlineWalkthrough") {
-      chosen.push(num(draft.returnMM), num(draft.panelMM));
-    } else {
-      chosen.push(num(draft.panelMM) || num(draft.returnMM));
+      chosen.push(num(draft.panelMM));
     }
   } else {
     chosen.push(num(draft.panelMM));
@@ -485,10 +493,12 @@ export function resolvePanelsForPayload(
   if (config.fixedStyle === "double") {
     chosen.push(num(config.leftFixedPanelMM), num(config.rightFixedPanelMM));
   } else if (config.fixedStyle === "panelReturn") {
+    const returnHob = num(config.returnHobMM) || num(config.returnMM);
+    chosen.push(
+      num(config.returnPanelMM) || returnPanelFromHob(returnHob)
+    );
     if (config.fixedPanelReturnStyle === "inlineWalkthrough") {
-      chosen.push(num(config.returnMM), num(config.panelMM));
-    } else {
-      chosen.push(num(config.panelMM) || num(config.returnMM));
+      chosen.push(num(config.frontPanelMM) || num(config.panelMM));
     }
   } else {
     chosen.push(num(config.panelMM));

@@ -1,6 +1,7 @@
 import type { OrderScreenPayload } from "@/lib/orders";
 import type { ScreenDiagramProps } from "@/components/screen-diagram-shared";
 import type { FixedStyle, HingeSide, Side } from "@/lib/constants";
+import { returnPanelFromHob } from "@/lib/stock-panels";
 
 function asSide(value: unknown): Side {
   return value === "right" ? "right" : "left";
@@ -31,25 +32,41 @@ export function screenDiagramPropsFromPayload(
   screen: OrderScreenPayload
 ): ScreenDiagramProps {
   const config = screen.config;
+  const fixedStyle = asFixedStyle(config.fixedStyle);
+  const fixedPanelReturnStyle = asFixedPanelReturnStyle(
+    config.fixedPanelReturnStyle
+  );
+  const isReturnOnly =
+    fixedStyle === "panelReturn" &&
+    fixedPanelReturnStyle === "singleInReturn";
+  const frontPanel = str(config.frontPanelMM ?? config.panelMM);
+  const returnHob = Number(config.returnHobMM ?? config.returnMM) || 0;
+  const returnPanel =
+    config.returnPanelMM != null
+      ? str(config.returnPanelMM)
+      : isReturnOnly
+        ? str(returnPanelFromHob(returnHob))
+        : undefined;
+
   return {
     type: screen.type,
     frontOnlyStyle:
       config.style === "panelDoorPanel" ? "panelDoorPanel" : "panelDoor",
-    fixedStyle: asFixedStyle(config.fixedStyle),
+    fixedStyle,
     returnSide: asSide(config.returnSide),
     panelSide: asSide(config.panelSide),
     isSliding: Boolean(config.isSliding),
     hingeSide: asHingeSide(config.hingeSide),
     angleHeight: str(config.angleHeight),
-    frontMM: str(config.frontMM),
-    returnMM: str(config.returnMM),
+    frontMM: str(config.frontHobMM ?? config.frontMM),
+    returnMM: str(config.returnHobMM ?? config.returnMM),
     w2wMM: str(config.w2wMM),
     leftPanelMM: str(config.leftPanelMM),
     rightPanelMM: str(config.rightPanelMM),
     leftFixedPanelMM: str(config.leftFixedPanelMM),
     rightFixedPanelMM: str(config.rightFixedPanelMM),
-    fixedPanelReturnStyle: asFixedPanelReturnStyle(config.fixedPanelReturnStyle),
-    panelMM: str(config.panelMM),
+    fixedPanelReturnStyle,
+    panelMM: isReturnOnly ? returnPanel : frontPanel,
     doorMM: str(config.doorMM),
     wallA: str(config.wallA),
     wallB: str(config.wallB),

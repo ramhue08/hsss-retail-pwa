@@ -11,8 +11,11 @@ import {
   FRONT_RETURN_STOCK_MAX_MM,
   frontOnlyEffectiveW2w,
   hidePricing,
+  panelReturnOpeningMM,
   resolveLinkedRightPanelMM,
+  returnPanelFromHob,
   validateScreenDraft,
+  WALKTHROUGH_WARNING_MM,
 } from "@/lib/screen-rules";
 import type { FixedPanelReturnStyle, FrontOnlySizeMode } from "@/lib/screen-rules";
 import { calcPrice, type PricingOptions, type PriceBreakdown } from "@/lib/pricing";
@@ -441,6 +444,7 @@ export function screenDraftToPayload(
   }
 
   const isDouble = draft.fixedStyle === "double";
+  const isPanelReturn = draft.fixedStyle === "panelReturn";
   const panelMM = isDouble ? undefined : Number(draft.panelMM);
   const leftFixedPanelMM = isDouble ? Number(draft.leftFixedPanelMM) : undefined;
   const rightFixedPanelMM = isDouble ? Number(draft.rightFixedPanelMM) : undefined;
@@ -449,38 +453,40 @@ export function screenDraftToPayload(
     if (!leftFixedPanelMM || !rightFixedPanelMM) {
       return { error: "Enter left and right panel sizes." };
     }
-  } else if (!panelMM) {
+  } else if (!isPanelReturn && !panelMM) {
     return { error: "Enter panel width." };
   }
 
-  const isPanelReturn = draft.fixedStyle === "panelReturn";
-  const returnMM = isPanelReturn ? Number(draft.returnMM) : undefined;
-  if (isPanelReturn && !returnMM) return { error: "Enter return size." };
+  const returnHobMM = isPanelReturn ? Number(draft.returnMM) : undefined;
+  if (isPanelReturn && !returnHobMM) return { error: "Enter return hob." };
+  const returnPanelMM =
+    isPanelReturn && returnHobMM ? returnPanelFromHob(returnHobMM) : undefined;
 
-  const frontMM = isPanelReturn ? Number(draft.frontMM) : undefined;
-  if (isPanelReturn && draft.fixedPanelReturnStyle === "inlineWalkthrough") {
-    if (!frontMM) return { error: "Enter front total size." };
-    if (frontMM <= (panelMM ?? 0))
-      return { error: "Front total must be larger than the fixed panel." };
-  }
+  const isInlineReturn =
+    isPanelReturn && draft.fixedPanelReturnStyle === "inlineWalkthrough";
+  const frontHobMM = isInlineReturn ? Number(draft.frontMM) : undefined;
+  if (isInlineReturn && !frontHobMM) return { error: "Enter front hob." };
+
+  const frontPanelMM = isInlineReturn ? Number(draft.panelMM) || 0 : 0;
+  const openingMM =
+    isInlineReturn && frontHobMM
+      ? panelReturnOpeningMM(frontHobMM, frontPanelMM)
+      : undefined;
 
   const w2wMM = !isPanelReturn ? Number(draft.w2wMM) : undefined;
   if (!isPanelReturn && !w2wMM) return { error: "Enter wall-to-wall size." };
 
-  const pricingPanelMM = isDouble
-    ? Math.max(leftFixedPanelMM!, rightFixedPanelMM!)
-    : panelMM!;
   const price = skipPricing
     ? null
     : calcPrice(
         "fixedPanel",
         {
-          panelMM: pricingPanelMM,
+          panelMM: isPanelReturn ? frontPanelMM || undefined : panelMM,
           leftFixedPanelMM,
           rightFixedPanelMM,
           w2wMM,
-          frontMM,
-          returnMM,
+          frontMM: frontHobMM,
+          returnMM: returnHobMM,
           fixedStyle: draft.fixedStyle,
           fixedPanelReturnStyle: isPanelReturn
             ? draft.fixedPanelReturnStyle
@@ -500,10 +506,17 @@ export function screenDraftToPayload(
   } else if (draft.fixedStyle === "double") {
     summary = `Fixed L${leftFixedPanelMM}+R${rightFixedPanelMM} ${w2wMM}mm w2w ${angleLabel(angleHeight)} ${colour}`;
   } else if (draft.fixedPanelReturnStyle === "singleInReturn") {
-    summary = `Fixed return only ${panelMM}mm ${returnMM}mm return ${angleLabel(angleHeight)} ${colour}`;
+    summary = `Fixed return only · return hob ${returnHobMM} · return panel ${returnPanelMM} ${angleLabel(angleHeight)} ${colour}`;
   } else {
-    const walk = frontMM! - (panelMM ?? 0);
-    summary = `Fixed + return ${panelMM}×${returnMM} front ${frontMM} walk ${walk} ${angleLabel(angleHeight)} ${colour}`;
+    const openingPart =
+      frontPanelMM > 0 && openingMM != null
+        ? ` · opening ${openingMM}${
+            openingMM < WALKTHROUGH_WARNING_MM ? " ⚠ under 600" : ""
+          }`
+        : "";
+    summary = `Fixed + return · return hob ${returnHobMM} · return panel ${returnPanelMM} · front hob ${frontHobMM} · front panel ${
+      frontPanelMM > 0 ? frontPanelMM : "none"
+    }${openingPart} ${angleLabel(angleHeight)} ${colour}`;
   }
   if (draft.isRadiusCorner) summary += " 200mm radius";
   if (customPanel) summary += " custom panel";
@@ -517,13 +530,27 @@ export function screenDraftToPayload(
     config: {
       fixedStyle: draft.fixedStyle,
       fixedPanelReturnStyle: isPanelReturn ? draft.fixedPanelReturnStyle : null,
-      panelMM: panelMM ?? null,
+      panelMM: isPanelReturn
+        ? frontPanelMM > 0
+          ? frontPanelMM
+          : null
+        : (panelMM ?? null),
       leftFixedPanelMM: leftFixedPanelMM ?? null,
       rightFixedPanelMM: rightFixedPanelMM ?? null,
       panelSide: draft.fixedStyle === "single" ? draft.panelSide : null,
-      returnMM: returnMM ?? null,
+      returnMM: returnHobMM ?? null,
+      returnHobMM: returnHobMM ?? null,
+      returnPanelMM: returnPanelMM ?? null,
       returnSide: isPanelReturn ? draft.returnSide : null,
-      frontMM: frontMM ?? null,
+      frontMM: frontHobMM ?? null,
+      frontHobMM: frontHobMM ?? null,
+      frontPanelMM: isInlineReturn
+        ? frontPanelMM > 0
+          ? frontPanelMM
+          : "none"
+        : null,
+      openingMM:
+        frontPanelMM > 0 && openingMM != null ? openingMM : null,
       w2wMM: w2wMM ?? null,
       angleHeight,
       customSize,
@@ -764,13 +791,25 @@ export function screenPayloadToDraft(screen: OrderScreenPayload): ScreenDraft {
     draft.wallB = String(config.wallB ?? 900);
   } else {
     draft.fixedStyle = parseFixedStyle(config.fixedStyle);
-    draft.panelMM = String(config.panelMM ?? 900);
+    const isPanelReturn = draft.fixedStyle === "panelReturn";
+    const savedFrontPanel = config.frontPanelMM ?? config.panelMM;
+    draft.panelMM = isPanelReturn
+      ? savedFrontPanel != null &&
+        savedFrontPanel !== "none" &&
+        savedFrontPanel !== ""
+        ? String(savedFrontPanel)
+        : ""
+      : String(config.panelMM ?? 885);
     draft.leftFixedPanelMM = String(config.leftFixedPanelMM ?? 350);
     draft.rightFixedPanelMM = String(config.rightFixedPanelMM ?? 350);
     draft.w2wMM = String(config.w2wMM ?? 1200);
     draft.isRadiusCorner = Boolean(config.isRadiusCorner);
-    if (config.frontMM != null) draft.frontMM = String(config.frontMM);
-    if (config.returnMM != null) draft.returnMM = String(config.returnMM);
+    if (config.returnHobMM != null || config.returnMM != null) {
+      draft.returnMM = String(config.returnHobMM ?? config.returnMM);
+    }
+    if (config.frontHobMM != null || config.frontMM != null) {
+      draft.frontMM = String(config.frontHobMM ?? config.frontMM);
+    }
   }
 
   return draft;

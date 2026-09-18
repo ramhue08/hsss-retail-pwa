@@ -30,9 +30,33 @@ import {
 } from "@/lib/contact";
 import { SendDetailsDialog } from "@/components/send-details-dialog";
 import {
+  CustomSizeNotice,
+  CustomSizeToggle,
+  FixedPanelReturnStyleField,
+  FixedPanelStockNotice,
+  FrontOnlyMinimumNotice,
+  FrontOnlySizeModeField,
+  FrontReturnStockNotice,
+  HingeSideField,
+  LinkedPanelField,
+  OptionalStockPanelPicker,
+  RadiusCornerPanelSizeField,
+  RadiusCornerToggle,
+  ReturnHobField,
+  ScreenSizeInput,
+  SliderWidthNotice,
+  StockPanelPicker,
+  WalkthroughWarning,
+} from "@/components/screen-form-shared";
+import { frontOnlyMinOpening } from "@/lib/stock-panels";
+import {
   frontOnlyEffectiveW2w,
+  panelReturnOpeningMM,
+  returnPanelFromHob,
   SLIDER,
+  snapToStock,
   syncFrontOnlyRightPanel,
+  WALKTHROUGH_WARNING_MM,
 } from "@/lib/screen-rules";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -45,24 +69,6 @@ import {
 } from "@/components/ui/field";
 import { ScreenDiagram } from "@/components/screen-diagram";
 import { ScreenPriceTotal } from "@/components/screen-price-total";
-import {
-  CustomSizeNotice,
-  CustomSizeToggle,
-  FixedPanelReturnStyleField,
-  FixedPanelStockNotice,
-  FrontOnlyMinimumNotice,
-  FrontOnlySizeModeField,
-  FrontReturnStockNotice,
-  HingeSideField,
-  LinkedPanelField,
-  RadiusCornerPanelSizeField,
-  RadiusCornerToggle,
-  ScreenSizeInput,
-  SliderWidthNotice,
-  StockPanelPicker,
-  WalkthroughWarning,
-} from "@/components/screen-form-shared";
-import { frontOnlyMinOpening } from "@/lib/stock-panels";
 
 const SCREEN_OPTIONS: { key: QuickScreenKey; type: ScreenType; label: string }[] =
   [
@@ -414,7 +420,26 @@ export function DesignForm({
                     <ChoiceChip
                       key={opt.value}
                       selected={draft.fixedStyle === opt.value}
-                      onClick={() => patch({ fixedStyle: opt.value })}
+                      onClick={() => {
+                        if (opt.value === "panelReturn") {
+                          patch({
+                            fixedStyle: "panelReturn",
+                            panelMM: "",
+                            returnMM: String(
+                              snapToStock(Number(draft.returnMM) || 900)
+                            ),
+                            frontMM: String(
+                              snapToStock(Number(draft.frontMM) || 900)
+                            ),
+                          });
+                          return;
+                        }
+                        if (opt.value === "single" && !Number(draft.panelMM)) {
+                          patch({ fixedStyle: "single", panelMM: "885" });
+                          return;
+                        }
+                        patch({ fixedStyle: opt.value });
+                      }}
                       className="px-2 text-xs sm:text-sm"
                     >
                       {opt.label}
@@ -544,7 +569,13 @@ export function DesignForm({
                     <FixedPanelReturnStyleField
                       draft={draft}
                       onChange={(fixedPanelReturnStyle) =>
-                        patch({ fixedPanelReturnStyle })
+                        patch({
+                          fixedPanelReturnStyle,
+                          panelMM:
+                            fixedPanelReturnStyle === "inlineWalkthrough"
+                              ? ""
+                              : draft.panelMM,
+                        })
                       }
                     />
                     <ChipRow label="Return side">
@@ -558,96 +589,53 @@ export function DesignForm({
                         </ChoiceChip>
                       ))}
                     </ChipRow>
-                    {draft.isRadiusCorner ? (
-                      <RadiusCornerPanelSizeField
-                        label={
-                          draft.fixedPanelReturnStyle === "inlineWalkthrough"
-                            ? "Return panel"
-                            : "Return"
-                        }
-                        value={draft.returnMM}
-                        onChange={(value) => patch({ returnMM: value })}
-                      />
-                    ) : draft.customSize ? (
-                      <ScreenSizeInput
-                        label={
-                          draft.fixedPanelReturnStyle === "inlineWalkthrough"
-                            ? "Return panel (mm)"
-                            : "Return (mm)"
-                        }
-                        value={draft.returnMM}
-                        onChange={(value) => patch({ returnMM: value })}
-                        draft={draft}
-                      />
-                    ) : (
-                      <StockPanelPicker
-                        label="Return stock panel"
-                        value={draft.returnMM}
-                        onChange={(value) => patch({ returnMM: value })}
-                      />
-                    )}
+                    <ReturnHobField
+                      draft={draft}
+                      onChange={(value) => patch({ returnMM: value })}
+                    />
                     {draft.fixedPanelReturnStyle === "inlineWalkthrough" ? (
                       <>
                         <ScreenSizeInput
-                          label="Front total (mm)"
+                          label="Front hob (mm)"
                           value={draft.frontMM}
                           onChange={(value) => patch({ frontMM: value })}
                           draft={draft}
                         />
-                        {draft.isRadiusCorner ? (
-                          <RadiusCornerPanelSizeField
-                            label="Inline panel"
-                            value={draft.panelMM}
-                            onChange={(value) => patch({ panelMM: value })}
-                          />
-                        ) : draft.customSize ? (
-                          <ScreenSizeInput
-                            label="Inline panel (mm)"
-                            value={draft.panelMM}
-                            onChange={(value) => patch({ panelMM: value })}
-                            draft={draft}
-                          />
-                        ) : (
-                          <StockPanelPicker
-                            label="Inline stock panel"
-                            value={draft.panelMM}
-                            onChange={(value) => patch({ panelMM: value })}
-                          />
-                        )}
+                        <OptionalStockPanelPicker
+                          label="Front panel"
+                          value={draft.panelMM}
+                          onChange={(value) => patch({ panelMM: value })}
+                        />
+                        {Number(draft.frontMM) > 0 &&
+                          Number(draft.panelMM) > 0 && (
+                            <p
+                              className={
+                                panelReturnOpeningMM(
+                                  Number(draft.frontMM),
+                                  Number(draft.panelMM)
+                                ) < WALKTHROUGH_WARNING_MM
+                                  ? "text-xs font-semibold text-red-600"
+                                  : "text-xs text-slate-500"
+                              }
+                            >
+                              Walkthrough opening:{" "}
+                              <strong>
+                                {panelReturnOpeningMM(
+                                  Number(draft.frontMM),
+                                  Number(draft.panelMM)
+                                )}
+                                mm
+                              </strong>
+                            </p>
+                          )}
                         <FixedPanelStockNotice draft={draft} />
                         <WalkthroughWarning
                           w2wMM={Number(draft.frontMM) || 0}
                           panelSizes={[Number(draft.panelMM) || 0]}
                         />
                       </>
-                    ) : draft.isRadiusCorner ? (
-                      <>
-                        <RadiusCornerPanelSizeField
-                          label="Panel in return"
-                          value={draft.panelMM}
-                          onChange={(value) => patch({ panelMM: value })}
-                        />
-                        <FixedPanelStockNotice draft={draft} />
-                      </>
-                    ) : draft.customSize ? (
-                      <>
-                        <ScreenSizeInput
-                          label="Panel in return (mm)"
-                          value={draft.panelMM}
-                          onChange={(value) => patch({ panelMM: value })}
-                          draft={draft}
-                        />
-                        <FixedPanelStockNotice draft={draft} />
-                      </>
                     ) : (
-                      <>
-                        <StockPanelPicker
-                          label="Stock panel in return"
-                          value={draft.panelMM}
-                          onChange={(value) => patch({ panelMM: value })}
-                        />
-                        <FixedPanelStockNotice draft={draft} />
-                      </>
+                      <FixedPanelStockNotice draft={draft} />
                     )}
                   </>
                 )}
@@ -771,7 +759,13 @@ export function DesignForm({
             rightPanelMM={draft.rightPanelMM}
             leftFixedPanelMM={draft.leftFixedPanelMM}
             rightFixedPanelMM={draft.rightFixedPanelMM}
-            panelMM={draft.panelMM}
+            panelMM={
+              draft.type === "Fixed Panel" &&
+              draft.fixedStyle === "panelReturn" &&
+              draft.fixedPanelReturnStyle === "singleInReturn"
+                ? String(returnPanelFromHob(Number(draft.returnMM) || 0))
+                : draft.panelMM
+            }
             doorMM={draft.doorMM}
             wallA={draft.wallA}
             wallB={draft.wallB}

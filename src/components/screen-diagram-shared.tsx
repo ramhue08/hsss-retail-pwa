@@ -1,6 +1,7 @@
 import type { FixedStyle, HingeSide, Side } from "@/lib/constants";
 import { splayedCutForInternal } from "@/lib/constants";
 import type { FrontOnlyStyle, ScreenType } from "@/lib/orders";
+import { returnPanelFromHob } from "@/lib/stock-panels";
 import type { ReactNode } from "react";
 
 const C = {
@@ -1451,7 +1452,7 @@ function FixedPanelReturnInfillBar({
           fontWeight={600}
           transform={`rotate(-90, ${x + w / 2}, ${y + h / 2})`}
         >
-          Return + Infill
+          Return
         </text>
       )}
     </g>
@@ -2155,10 +2156,11 @@ function diagramCopy(props: ScreenDiagramProps) {
     w2wMM = "1200",
     leftPanelMM = "350",
     rightPanelMM = "550",
-    panelMM = "900",
+    panelMM,
     doorMM = "662",
     wallA = "900",
     wallB = "900",
+    fixedPanelReturnStyle = "inlineWalkthrough",
   } = props;
 
   const frontN = Number(frontMM) || 900;
@@ -2168,6 +2170,10 @@ function diagramCopy(props: ScreenDiagramProps) {
   const panelN = Number(panelMM) || 900;
   const leftN = Number(leftPanelMM) || 350;
   const rightN = Number(rightPanelMM) || 550;
+  const returnPanelN = returnPanelFromHob(returnN);
+  const frontPanelN = Number(panelMM) || 0;
+  const openingN =
+    frontPanelN > 0 ? frontN - frontPanelN : 0;
 
   const title =
     type === "Front & Return"
@@ -2184,6 +2190,18 @@ function diagramCopy(props: ScreenDiagramProps) {
               ? "Fixed + Return"
               : "Single Fixed Panel";
 
+  const panelReturnSubtitle =
+    fixedPanelReturnStyle === "singleInReturn"
+      ? `${returnN}mm return hob, ${returnPanelN}mm return panel`
+      : [
+          `${returnN}mm return hob`,
+          `${returnPanelN}mm return panel`,
+          `${frontN}mm front hob`,
+          frontPanelN > 0
+            ? `${frontPanelN}mm front panel, ${openingN}mm opening`
+            : "no front panel",
+        ].join(", ");
+
   const subtitle =
     type === "Front & Return"
       ? `${frontN}mm front, ${returnN}mm return, ${doorN}mm door`
@@ -2196,7 +2214,7 @@ function diagramCopy(props: ScreenDiagramProps) {
             : fixedStyle === "double"
               ? `${panelN}mm each, ${w2wN}mm wall to wall`
               : fixedStyle === "panelReturn"
-                ? `${returnN}mm return, ${frontN}mm front`
+                ? panelReturnSubtitle
                 : `${panelN}mm panel, ${w2wN}mm wall to wall`;
 
   return { title, subtitle };
@@ -2222,7 +2240,7 @@ export function ScreenDiagramSvg(
     leftFixedPanelMM = "350",
     rightFixedPanelMM = "350",
     fixedPanelReturnStyle = "inlineWalkthrough",
-    panelMM = "900",
+    panelMM,
     doorMM = "662",
     wallA = "900",
     wallB = "900",
@@ -2233,7 +2251,13 @@ export function ScreenDiagramSvg(
   const returnN = Number(returnMM) || 900;
   const doorN = Number(doorMM) || 662;
   const w2wN = Number(w2wMM) || 1200;
-  const panelN = Number(panelMM) || 900;
+  const parsedPanel = Number(panelMM);
+  const panelN =
+    parsedPanel > 0
+      ? parsedPanel
+      : fixedStyle === "panelReturn"
+        ? 0
+        : 900;
   const leftN = Number(leftPanelMM) || 350;
   const rightN = Number(rightPanelMM) || 550;
   const leftFixedN = Number(leftFixedPanelMM) || panelN;

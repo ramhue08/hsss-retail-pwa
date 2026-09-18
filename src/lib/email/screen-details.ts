@@ -38,7 +38,14 @@ const CONFIG_LABELS: Record<string, string> = {
   sizeMode: "Size mode",
   frontOnlySizeMode: "Size mode",
   oversizeMeasurementDate: "Measure date",
+  returnHobMM: "Return hob",
+  returnPanelMM: "Return panel",
+  frontHobMM: "Front hob",
+  frontPanelMM: "Front panel",
+  openingMM: "Walkthrough opening",
 };
+
+const PANEL_RETURN_HOB_SKIP = new Set(["returnMM", "frontMM", "panelMM"]);
 
 function isBigDoor(value: unknown) {
   return Number(value) === 762 || String(value).trim() === "762";
@@ -103,6 +110,16 @@ function formatConfigValue(key: string, value: unknown): string | null {
     if (text === "exact") return null;
   }
 
+  if (key === "openingMM") {
+    const opening = Number(text);
+    if (!Number.isFinite(opening)) return null;
+    if (opening < 600) return `${opening} (under 600)`;
+  }
+
+  if (key === "frontPanelMM" && text.toLowerCase() === "none") {
+    return "None";
+  }
+
   return text;
 }
 
@@ -152,6 +169,9 @@ export function screenDetailRows(
     }
     // Oversize stores the rough value in w2wMM for the diagram — show rough only
     if (key === "w2wMM" && config.sizeMode === "oversize") {
+      continue;
+    }
+    if (config.returnHobMM != null && PANEL_RETURN_HOB_SKIP.has(key)) {
       continue;
     }
 

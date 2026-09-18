@@ -26,15 +26,17 @@ import {
 } from "@/lib/screen-rules";
 import {
   frontOnlyMinOpening,
+  returnPanelFromHob,
   SMALLEST_STOCK_PANEL_MM,
   STOCK_GLASS_PANELS,
 } from "@/lib/stock-panels";
 import { applyRetailMarkup, formatMoney } from "@/lib/pricing";
+import { Button } from "@/components/ui/button";
 import { ChoiceChip } from "@/components/ui/choice-chip";
 import { ChipRow, FieldSection, SelectField } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/notice";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export function CustomSizeToggle({
   draft,
@@ -161,11 +163,13 @@ export function StockPanelPicker({
   value,
   onChange,
   hint,
+  showHob = true,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   hint?: string;
+  showHob?: boolean;
 }) {
   const selected = Number(value) || 0;
   const hob = selected > 0 ? selected + 15 : null;
@@ -185,13 +189,77 @@ export function StockPanelPicker({
           </option>
         ))}
       </SelectField>
-      {hob != null && (
+      {showHob && hob != null && (
         <p className="mt-1.5 text-xs text-slate-500">
           Hob to build: <strong>{hob}mm</strong>
           {hint ? ` — ${hint}` : ""}
         </p>
       )}
     </div>
+  );
+}
+
+/** Return hob in 50mm steps; return panel is always hob − 15. */
+export function ReturnHobField({
+  draft,
+  onChange,
+}: {
+  draft: ScreenDraft;
+  onChange: (returnMM: string) => void;
+}) {
+  const hob = Number(draft.returnMM) || 0;
+  const panel = returnPanelFromHob(hob);
+  return (
+    <div>
+      <ScreenSizeInput
+        label="Return hob (mm)"
+        value={draft.returnMM}
+        onChange={onChange}
+        draft={draft}
+      />
+      {panel > 0 ? (
+        <p className="mt-1.5 text-xs text-slate-500">
+          Return panel: <strong>{panel}mm</strong>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Front infill panel — empty until the builder taps Add panel, then stock list. */
+export function OptionalStockPanelPicker({
+  label,
+  value,
+  onChange,
+  addLabel = "Add panel",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  addLabel?: string;
+}) {
+  const selected = Number(value) || 0;
+  const [open, setOpen] = useState(selected > 0);
+
+  useEffect(() => {
+    if (selected > 0) setOpen(true);
+  }, [selected]);
+
+  if (!open) {
+    return (
+      <Button type="button" variant="secondary" size="sm" onClick={() => setOpen(true)}>
+        {addLabel}
+      </Button>
+    );
+  }
+
+  return (
+    <StockPanelPicker
+      label={label}
+      value={value}
+      onChange={onChange}
+      showHob={false}
+    />
   );
 }
 

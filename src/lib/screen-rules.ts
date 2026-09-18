@@ -3,8 +3,11 @@ import type { FrontOnlyStyle, ScreenDraft, ScreenType } from "@/lib/orders";
 import {
   frontOnlyMinOpening,
   frontReturnMinFront,
+  returnPanelFromHob,
   SMALLEST_STOCK_PANEL_MM,
 } from "@/lib/stock-panels";
+
+export { returnPanelFromHob } from "@/lib/stock-panels";
 
 export const STOCK_STEP_MM = 50;
 export const CUSTOM_STEP_MM = 1;
@@ -189,9 +192,13 @@ export function snapDraftToRadiusCornerStock(
       nearestRadiusCornerStockSize(Number(draft.panelMM) || 885)
     );
     if (draft.fixedStyle === "panelReturn") {
+      const hob = Number(draft.returnMM) || 900;
       patch.returnMM = String(
-        nearestRadiusCornerStockSize(Number(draft.returnMM) || 885)
+        nearestRadiusCornerStockSize(hob - 15) + 15
       );
+      if (!(Number(draft.panelMM) > 0)) {
+        delete patch.panelMM;
+      }
     }
   }
   return patch;
@@ -219,14 +226,12 @@ export function fixedPanelBaseWidthMM(draft: ScreenDraft) {
       Number(draft.rightFixedPanelMM) || 0
     );
   }
-  if (
-    draft.fixedStyle === "panelReturn" &&
-    draft.fixedPanelReturnStyle === "inlineWalkthrough"
-  ) {
-    return Math.max(
-      Number(draft.panelMM) || 0,
-      Number(draft.returnMM) || 0
-    );
+  if (draft.fixedStyle === "panelReturn") {
+    const returnPanel = returnPanelFromHob(Number(draft.returnMM) || 0);
+    if (draft.fixedPanelReturnStyle === "inlineWalkthrough") {
+      return Math.max(Number(draft.panelMM) || 0, returnPanel);
+    }
+    return returnPanel;
   }
   return Number(draft.panelMM) || 0;
 }
@@ -271,12 +276,19 @@ export function walkthroughOpeningMM(
   return w2wMM - panelSizes.reduce((sum, n) => sum + n, 0);
 }
 
+export function panelReturnOpeningMM(frontHobMM: number, frontPanelMM: number) {
+  if (!(frontHobMM > 0) || !(frontPanelMM > 0)) return 0;
+  return frontHobMM - frontPanelMM;
+}
+
 export function walkthroughUnderLimit(
   w2wMM: number,
   panelSizes: number[]
 ) {
-  const opening = walkthroughOpeningMM(w2wMM, panelSizes);
-  return opening > 0 && opening < WALKTHROUGH_WARNING_MM;
+  const panels = panelSizes.filter((n) => n > 0);
+  if (!w2wMM || panels.length === 0) return false;
+  const opening = walkthroughOpeningMM(w2wMM, panels);
+  return opening < WALKTHROUGH_WARNING_MM;
 }
 
 export function validateFrontOnlySizeMode(draft: ScreenDraft) {

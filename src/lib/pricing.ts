@@ -7,6 +7,7 @@ import {
   RADIUS_CORNER_EXTRA,
   isFixedPanelStockWidth,
 } from "@/lib/screen-rules";
+import { returnPanelFromHob } from "@/lib/stock-panels";
 import type { ServiceType } from "@/types/database";
 
 const PRICING = {
@@ -236,11 +237,12 @@ export function resolveFixedPanelPricing(input: FixedPanelPricingInput) {
   }
 
   if (fixedStyle === "panelReturn") {
+    const returnPanelMM = returnPanelFromHob(returnMM);
     if (fixedPanelReturnStyle === "inlineWalkthrough") {
-      // Same as two panels: larger glass = base, smaller = extra panel (5C).
-      // Return glass + front inline glass; walkthrough opening is not glass.
+      // Return glass is hob − 15; front infill is the chosen stock panel.
+      // Walkthrough opening is not glass.
       const a = panelMM;
-      const b = returnMM;
+      const b = returnPanelMM;
       return {
         basePanelMM: Math.max(a, b),
         extraPanelMM: Math.min(a, b),
@@ -249,7 +251,7 @@ export function resolveFixedPanelPricing(input: FixedPanelPricingInput) {
       };
     }
     return {
-      basePanelMM: panelMM,
+      basePanelMM: returnPanelMM,
       extraPanelMM: 0,
       hobLengthMM: returnMM,
       bentHob: true,
