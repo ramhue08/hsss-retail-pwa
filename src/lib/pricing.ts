@@ -253,7 +253,7 @@ export function resolveFixedPanelPricing(input: FixedPanelPricingInput) {
     return {
       basePanelMM: returnPanelMM,
       extraPanelMM: 0,
-      hobLengthMM: returnMM,
+      hobLengthMM: frontMM + returnMM,
       bentHob: true,
     };
   }

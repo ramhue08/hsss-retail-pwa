@@ -464,8 +464,8 @@ export function screenDraftToPayload(
 
   const isInlineReturn =
     isPanelReturn && draft.fixedPanelReturnStyle === "inlineWalkthrough";
-  const frontHobMM = isInlineReturn ? Number(draft.frontMM) : undefined;
-  if (isInlineReturn && !frontHobMM) return { error: "Enter front hob." };
+  const frontHobMM = isPanelReturn ? Number(draft.frontMM) : undefined;
+  if (isPanelReturn && !frontHobMM) return { error: "Enter front hob." };
 
   const frontPanelMM = isInlineReturn ? Number(draft.panelMM) || 0 : 0;
   const openingMM =
@@ -506,7 +506,7 @@ export function screenDraftToPayload(
   } else if (draft.fixedStyle === "double") {
     summary = `Fixed L${leftFixedPanelMM}+R${rightFixedPanelMM} ${w2wMM}mm w2w ${angleLabel(angleHeight)} ${colour}`;
   } else if (draft.fixedPanelReturnStyle === "singleInReturn") {
-    summary = `Fixed return only · return hob ${returnHobMM} · return panel ${returnPanelMM} ${angleLabel(angleHeight)} ${colour}`;
+    summary = `Fixed return only · return hob ${returnHobMM} · return panel ${returnPanelMM} · front hob ${frontHobMM} ${angleLabel(angleHeight)} ${colour}`;
   } else {
     const openingPart =
       frontPanelMM > 0 && openingMM != null

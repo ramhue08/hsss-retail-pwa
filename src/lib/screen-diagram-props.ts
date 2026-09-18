@@ -1,7 +1,6 @@
 import type { OrderScreenPayload } from "@/lib/orders";
 import type { ScreenDiagramProps } from "@/components/screen-diagram-shared";
 import type { FixedStyle, HingeSide, Side } from "@/lib/constants";
-import { returnPanelFromHob } from "@/lib/stock-panels";
 
 function asSide(value: unknown): Side {
   return value === "right" ? "right" : "left";
@@ -36,17 +35,7 @@ export function screenDiagramPropsFromPayload(
   const fixedPanelReturnStyle = asFixedPanelReturnStyle(
     config.fixedPanelReturnStyle
   );
-  const isReturnOnly =
-    fixedStyle === "panelReturn" &&
-    fixedPanelReturnStyle === "singleInReturn";
   const frontPanel = str(config.frontPanelMM ?? config.panelMM);
-  const returnHob = Number(config.returnHobMM ?? config.returnMM) || 0;
-  const returnPanel =
-    config.returnPanelMM != null
-      ? str(config.returnPanelMM)
-      : isReturnOnly
-        ? str(returnPanelFromHob(returnHob))
-        : undefined;
 
   return {
     type: screen.type,
@@ -66,7 +55,7 @@ export function screenDiagramPropsFromPayload(
     leftFixedPanelMM: str(config.leftFixedPanelMM),
     rightFixedPanelMM: str(config.rightFixedPanelMM),
     fixedPanelReturnStyle,
-    panelMM: isReturnOnly ? returnPanel : frontPanel,
+    panelMM: frontPanel,
     doorMM: str(config.doorMM),
     wallA: str(config.wallA),
     wallB: str(config.wallB),

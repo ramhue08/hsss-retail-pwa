@@ -1099,7 +1099,8 @@ function FixedPanelWalkBox({
   y,
   w,
   h = 18,
-}: Readonly<{ x: number; y: number; w: number; h?: number }>) {
+  label = "Walk",
+}: Readonly<{ x: number; y: number; w: number; h?: number; label?: string }>) {
   if (w <= 0) return null;
   return (
     <g>
@@ -1125,7 +1126,7 @@ function FixedPanelWalkBox({
           fontWeight={600}
           opacity={0.8}
         >
-          Walk
+          {label}
         </text>
       )}
     </g>
@@ -1639,6 +1640,9 @@ function FixedPanelReturnPlan({
     : CORNER_JUNCTION_X;
   const topCornerX = isRh ? mirrorRectX(CORNER_TOP_X, 12) : CORNER_TOP_X;
   const watermark = isRh ? "RH" : "LH";
+  const returnPanelN = returnPanelFromHob(returnN);
+  const returnLengthLabel =
+    returnPanelN > 0 ? `${returnPanelN}mm` : `${returnN}mm`;
 
   const fixedW = Math.min(
     FRONT_GLASS_RUN,
@@ -1727,7 +1731,7 @@ function FixedPanelReturnPlan({
         y1={TOP_Y}
         y2={DIM_RETURN_Y2}
         x={dimReturnX}
-        label={`${returnN}mm`}
+        label={returnLengthLabel}
         labelSide={isRh ? "right" : "left"}
       />
       <FrontOnlySheetDim
@@ -1741,56 +1745,18 @@ function FixedPanelReturnPlan({
   );
 
   if (fixedPanelReturnStyle === "singleInReturn") {
-    const REF_RETURN = 900;
-    const panelH = Math.min(
-      RETURN_H,
-      (panelN / REF_RETURN) * RETURN_H
-    );
-    const panelY = RETURN_TOP + (RETURN_H - panelH) / 2;
-    const frontWalkX = !isRh ? FRONT_WALK_START : mirrorRectX(FRONT_WALK_START, FRONT_GLASS_RUN);
-    const frontWalkW = FRONT_GLASS_RUN;
+    const frontWalkX = !isRh
+      ? FRONT_WALK_START
+      : mirrorRectX(FRONT_WALK_START, FRONT_GLASS_RUN);
 
     return renderShell(
-      <>
-        <FixedPanelWalkBox
-          x={frontWalkX}
-          y={WALK_Y}
-          w={frontWalkW}
-          h={WALK_H}
-        />
-        <rect
-          x={returnBarX}
-          y={panelY}
-          width={RETURN_W}
-          height={panelH}
-          fill={FO.doorFill}
-          stroke={FO.doorStroke}
-          strokeWidth={1.5}
-          rx={1}
-        />
-        {panelH >= 28 && (
-          <text
-            x={returnBarX + RETURN_W / 2}
-            y={panelY + panelH / 2}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill={FO.labelDoor}
-            fontSize={7}
-            fontWeight={600}
-            transform={`rotate(-90, ${returnBarX + RETURN_W / 2}, ${panelY + panelH / 2})`}
-          >
-            Fixed
-          </text>
-        )}
-      </>,
-      (
-        <FixedPanelPanelDim
-          x1={returnBarX}
-          x2={returnBarX + RETURN_W}
-          y={RETURN_TOP + RETURN_H / 2 - 24}
-          label={`${panelN}mm`}
-        />
-      )
+      <FixedPanelWalkBox
+        x={frontWalkX}
+        y={WALK_Y}
+        w={FRONT_GLASS_RUN}
+        h={WALK_H}
+        label="Front(Walk)"
+      />
     );
   }
 
@@ -1816,7 +1782,13 @@ function FixedPanelReturnPlan({
           />
         </>
       )}
-      <FixedPanelWalkBox x={walkX} y={WALK_Y} w={walkW} h={WALK_H} />
+      <FixedPanelWalkBox
+        x={walkX}
+        y={WALK_Y}
+        w={walkW}
+        h={WALK_H}
+        label="Front(Walk)"
+      />
     </>
   );
 }
@@ -2192,7 +2164,7 @@ function diagramCopy(props: ScreenDiagramProps) {
 
   const panelReturnSubtitle =
     fixedPanelReturnStyle === "singleInReturn"
-      ? `${returnN}mm return hob, ${returnPanelN}mm return panel`
+      ? `${returnN}mm return hob, ${returnPanelN}mm return panel, ${frontN}mm front hob`
       : [
           `${returnN}mm return hob`,
           `${returnPanelN}mm return panel`,

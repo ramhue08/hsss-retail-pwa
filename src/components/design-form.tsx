@@ -52,7 +52,6 @@ import { frontOnlyMinOpening } from "@/lib/stock-panels";
 import {
   frontOnlyEffectiveW2w,
   panelReturnOpeningMM,
-  returnPanelFromHob,
   SLIDER,
   snapToStock,
   syncFrontOnlyRightPanel,
@@ -635,7 +634,15 @@ export function DesignForm({
                         />
                       </>
                     ) : (
-                      <FixedPanelStockNotice draft={draft} />
+                      <>
+                        <ScreenSizeInput
+                          label="Front hob (mm)"
+                          value={draft.frontMM}
+                          onChange={(value) => patch({ frontMM: value })}
+                          draft={draft}
+                        />
+                        <FixedPanelStockNotice draft={draft} />
+                      </>
                     )}
                   </>
                 )}
@@ -759,13 +766,7 @@ export function DesignForm({
             rightPanelMM={draft.rightPanelMM}
             leftFixedPanelMM={draft.leftFixedPanelMM}
             rightFixedPanelMM={draft.rightFixedPanelMM}
-            panelMM={
-              draft.type === "Fixed Panel" &&
-              draft.fixedStyle === "panelReturn" &&
-              draft.fixedPanelReturnStyle === "singleInReturn"
-                ? String(returnPanelFromHob(Number(draft.returnMM) || 0))
-                : draft.panelMM
-            }
+            panelMM={draft.panelMM}
             doorMM={draft.doorMM}
             wallA={draft.wallA}
             wallB={draft.wallB}
