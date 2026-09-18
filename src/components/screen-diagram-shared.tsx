@@ -1640,9 +1640,6 @@ function FixedPanelReturnPlan({
     : CORNER_JUNCTION_X;
   const topCornerX = isRh ? mirrorRectX(CORNER_TOP_X, 12) : CORNER_TOP_X;
   const watermark = isRh ? "RH" : "LH";
-  const returnPanelN = returnPanelFromHob(returnN);
-  const returnLengthLabel =
-    returnPanelN > 0 ? `${returnPanelN}mm` : `${returnN}mm`;
 
   const fixedW = Math.min(
     FRONT_GLASS_RUN,
@@ -1731,7 +1728,7 @@ function FixedPanelReturnPlan({
         y1={TOP_Y}
         y2={DIM_RETURN_Y2}
         x={dimReturnX}
-        label={returnLengthLabel}
+        label={`${returnN}mm`}
         labelSide={isRh ? "right" : "left"}
       />
       <FrontOnlySheetDim
